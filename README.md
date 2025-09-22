@@ -4,7 +4,7 @@ contains my observations when solving that day's puzzle.
 
 |Language| Days
 |--------|-------
-|Clojure |
+|Clojure | 1
 |Crystal |
 |Elixir  |
 |Rust    |
