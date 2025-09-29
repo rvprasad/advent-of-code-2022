@@ -1,10 +1,9 @@
 This repo contains the code to solve the puzzles from [2022 Advent of
-Code](https://adventofcode.com/2022). The README.md file in the folder for each day
-contains my observations when solving that day's puzzle.
+Code](https://adventofcode.com/2022).
 
 |Language| Days
 |--------|-------
-|Clojure | 1
+|Clojure | 1, 2, 3
 |Crystal |
 |Elixir  |
 |Rust    |
