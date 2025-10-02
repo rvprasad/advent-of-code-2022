@@ -1,13 +1,5 @@
-This repo contains the code to solve the puzzles from [2022 Advent of
+This repo contains Clojure code to solve the puzzles from [2022 Advent of
 Code](https://adventofcode.com/2022).
-
-|Language| Days
-|--------|-------
-|Clojure | 1, 2, 3
-|Crystal |
-|Elixir  |
-|Rust    |
-|Scala   |
 
 
 ## Attribution
