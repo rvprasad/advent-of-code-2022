@@ -14,10 +14,9 @@
 (defn do-ranges-subsume [[[a b] [c d]]] (or (and (>= a c) (<= b d))
                                             (and (<= a c) (>= b d))))
 
-(defn do-ranges-overlap [[[a b] [c d]]] (or (and (>= a c) (<= a d))
-                                            (and (>= b c) (<= b d))
-                                            (and (>= c a) (<= c b))
-                                            (and (>= d a) (<= d b))))
+(defn do-ranges-overlap [[[a b] [c d]]]
+  (let [between #(and (>= %1 %2) (<= %1 %3))]
+    (or (between a c d) (between b c d) (between c a b) (between d a b))))
 
 (defn -main [filename]
   (let [pair-of-ranges (read-pair-of-ranges filename)]
