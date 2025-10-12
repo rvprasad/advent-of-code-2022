@@ -1,36 +1,25 @@
 (ns day3
   (:require [clojure.string :as str]
-            [clojure.java.io :as io]
             [clojure.set]))
 
-(defn read-content-of-rucksacks [filename]
-  (with-open [file (io/reader filename)]
-    (vec (line-seq file))))
+(def a-int (int \a))
 
-(defn get-priority [[a]]
-  (let [i (int a)]
-    (if (>= i (int \a))
-      (+ (- i (int \a)) 1)
-      (+ (- i (int \A)) 27))))
+(defn- get-priority [[c]]
+  (let [i (int c)]
+    (- i (if (>= i a-int) (dec a-int) (- (int \A) 27)))))
 
-(defn sum-of-priorities [contents]
-  (let [split-content (fn [c] (let [mid (/ (count c) 2)]
-                                [(take mid c) (take-last mid c)]))
-        find-common-elem-in-splits (fn [[a b]]
-                                     (seq (clojure.set/intersection
-                                           (set a) (set b))))]
-    (reduce + (map (comp get-priority find-common-elem-in-splits
-                         split-content)
-                   contents))))
+(defn- get-common-elem [coll]
+  (seq (apply clojure.set/intersection (map set coll))))
 
-(defn sum-of-badges [contents]
-  (let [find-common-elem-in-groups (fn [[a b c]]
-                                     (seq (clojure.set/intersection
-                                           (set a) (set b) (set c))))]
-    (reduce + (map (comp get-priority find-common-elem-in-groups)
-                   (partition 3 contents)))))
+(defn- sum-of-priorities [coll]
+  (let [f (fn [coll] (let [mid (/ (count coll) 2)]
+                       [(take mid coll) (take-last mid coll)]))]
+    (reduce + (map (comp get-priority get-common-elem f) coll))))
+
+(defn- sum-of-badges [coll]
+  (reduce + (map (comp get-priority get-common-elem) (partition 3 coll))))
 
 (defn -main [filename]
-  (let [contents-of-rucksacks (read-content-of-rucksacks filename)]
+  (let [contents-of-rucksacks (str/split-lines (slurp filename))]
     (println (sum-of-priorities contents-of-rucksacks))
     (println (sum-of-badges contents-of-rucksacks))))

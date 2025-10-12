@@ -3,10 +3,9 @@
    [clojure.string :as str]))
 
 (defn- read-packet-list [s]
-  (->>
-   (str/split (slurp s) #"\n\n")
-   (map str/split-lines)
-   (map (partial map read-string))))
+  (->> (str/split (slurp s) #"\n\n")
+       (map str/split-lines)
+       (map #(map read-string %))))
 
 (defn- get-order [l r]
   (cond
@@ -23,20 +22,18 @@
                                       (get-order (vec lt) (vec rt))))))
 
 (defn- solve-part1 [xs]
-  (->>
-   xs
-   (map #(get-order (first %) (second %)))
-   (map-indexed #(if (< %2 0) (inc %1) 0))
-   (reduce +)))
+  (->> xs
+       (map #(get-order (first %) (second %)))
+       (map-indexed #(if (neg? %2) (inc %1) 0))
+       (reduce +)))
 
 (defn- solve-part2 [xs]
-  (->>
-   xs
-   (apply concat)
-   (concat [[[2]] [[6]]])
-   (sort get-order)
-   (keep-indexed #(if (#{[[2]] [[6]]} %2) (inc %1) 1))
-   (reduce *)))
+  (->> xs
+       (apply concat)
+       (concat [[[2]] [[6]]])
+       (sort get-order)
+       (keep-indexed #(if (#{[[2]] [[6]]} %2) (inc %1) 1))
+       (reduce *)))
 
 (defn -main [filename]
   (let [packet-list (read-packet-list filename)]

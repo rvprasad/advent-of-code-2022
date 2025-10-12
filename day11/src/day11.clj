@@ -2,87 +2,64 @@
   (:require
    [clojure.string :as str]))
 
-(defrecord Monkey [items op tst])
+(defrecord Monkey [items op div t-next f-next])
 
-(defn- get-items [line]
-  (mapv #(Integer. %) (str/split (last (str/split line #": ")) #", ")))
-
-(defn- get-op-fn [line worry-factor scaling-factor]
+(defn- get-op-fn [line]
   (let [[op v] (rest (str/split (last (str/split line #"= ")) #" "))
-        op (if (= "*" op) * +)
-        op-fn (if (= "old" v) #(op % %) #(op % (Integer. v)))]
-    #(rem (bigint (/ (op-fn %) worry-factor)) scaling-factor)))
+        op (if (= "*" op) * +)]
+    (if (= "old" v) #(op % %) #(op % (parse-long v)))))
 
-(defn- get-tst-fn [tst-line t-line f-line]
-  (let [div (Integer. (last (str/split tst-line #" ")))
-        t-val (last (str/split t-line #" "))
-        f-val (last (str/split f-line #" "))]
-    #(if (= 0 (rem % div)) t-val f-val)))
+(defn- convert [[id-line items-line op-line tst-line t-line f-line]]
+  (let [id (str/replace id-line #"[Monkey :]" "")
+        items (str/split (last (str/split items-line #": ")) #", ")
+        op-fn (get-op-fn op-line)
+        div (Integer. (last (str/split tst-line #" ")))
+        t-next (last (str/split t-line #" "))
+        f-next (last (str/split f-line #" "))]
+    [id (->Monkey items op-fn div t-next f-next)]))
 
-(defn- convert [worry-factor scaling-factor
-                [id-line items-line op-line tst-line tr-line fl-line]]
-  [(str/replace id-line #"[Monkey :]" "")
-   (->Monkey (get-items items-line)
-             (get-op-fn op-line worry-factor scaling-factor)
-             (get-tst-fn tst-line tr-line fl-line))])
+(defn- read-monkeys [s]
+  (->> s
+       slurp
+       (#(str/split % #"\n\n"))
+       (map str/split-lines)
+       (map convert)
+       (into {})))
 
-(defn- read-monkeys [filename worry-factor]
-  (let [file-content (slurp filename)
-        scaling-factor (->>
-                        file-content
-                        (re-seq #"by \d+")
-                        (map #(Integer. (str/replace % #"by " "")))
-                        (apply *))]
-    (->>
-     (str/split file-content #"\n\n")
-     (map str/split-lines)
-     (map (partial convert worry-factor scaling-factor))
-     (into {}))))
-
-(defn- inspect-items [monkey]
-  (let [items (:items monkey)
-        op (:op monkey)
-        tst (:tst monkey)
-        new-items (map op items)
-        ids (map tst new-items)
+(defn- inspect-items [limit worry {:keys [items op div t-next f-next]}]
+  (let [new-items (map #(rem (long (/ (op (parse-long %)) worry)) limit) items)
+        ids (map #(if (= 0 (rem % div)) t-next f-next) new-items)
         helper (fn [acc [item id]] (assoc acc id (conj (acc id []) item)))]
-    (reduce helper {} (map vector new-items ids))))
+    (reduce helper {} (map vector (map str new-items) ids))))
 
-(defn- get-new-id-2-num-items [id monkey id-2-num-items]
-  (assoc id-2-num-items id (+ (id-2-num-items id 0) (count (:items monkey)))))
-
-(defn- perform-round [id-2-monkeys id-2-num-items [id & ids]]
+(defn- perform-round [id-2-monkeys id-2-num-items [id & ids] inspect-fn]
   (let [monkey (id-2-monkeys id)
-        id-2-new-items (inspect-items monkey)
-        update-monkey (fn [[id monkey]]
-                        [id (assoc monkey
-                                   :items
-                                   (concat (:items monkey)
-                                           (id-2-new-items id '())))])
-        new-id-2-monkeys (->>
-                          id-2-monkeys
-                          (map update-monkey)
-                          (into {})
-                          (#(assoc % id (assoc monkey :items []))))
-        new-id-2-num-items (get-new-id-2-num-items id monkey id-2-num-items)]
+        id-2-new-items (inspect-fn monkey)
+        update-monkey (fn [[id m]]
+                        [id (assoc m :items (concat (:items m)
+                                                    (id-2-new-items id '())))])
+        new-id-2-monkeys (->> id-2-monkeys
+                              (map update-monkey)
+                              (into {})
+                              (#(assoc % id (assoc monkey :items []))))
+        new-id-2-num-items (assoc id-2-num-items id (+ (id-2-num-items id 0)
+                                                       (count (:items monkey))))]
     (if (empty? ids)
       [new-id-2-monkeys new-id-2-num-items]
-      (recur new-id-2-monkeys new-id-2-num-items ids))))
+      (recur new-id-2-monkeys new-id-2-num-items ids inspect-fn))))
 
-(defn- calculate-monkey-business
-  ([id-2-monkeys round]
-   (calculate-monkey-business id-2-monkeys
-                              (zipmap (keys id-2-monkeys) (repeat 0))
-                              round))
-
-  ([id-2-monkeys id-2-num-items round]
-   (if (= round 0)
-     (reduce * (take-last 2 (sort (vals id-2-num-items))))
-     (let [[f s] (perform-round id-2-monkeys
-                                id-2-num-items
-                                (sort (keys id-2-monkeys)))]
-       (recur f s (- round 1))))))
+(defn- solve-puzzle [id-2-monkeys id-2-num-items inspect-fn round]
+  (if (= round 0)
+    (reduce * (take-last 2 (sort (vals id-2-num-items))))
+    (let [ids (sort (keys id-2-monkeys))
+          [f s] (perform-round id-2-monkeys id-2-num-items ids inspect-fn)]
+      (recur f s inspect-fn (dec round)))))
 
 (defn -main [filename]
-  (println (calculate-monkey-business (read-monkeys filename 3) 20))
-  (println (calculate-monkey-business (read-monkeys filename 1) 10000)))
+  (let [id-2-monkeys (read-monkeys filename)
+        limit (reduce * 1 (map #(:div %) (vals id-2-monkeys)))
+        id-2-num-items (zipmap (keys id-2-monkeys) (repeat 0))
+        part1-inspect (partial inspect-items limit 3)
+        part2-inspect (partial inspect-items limit 1)]
+    (println (solve-puzzle id-2-monkeys id-2-num-items part1-inspect 20))
+    (println (solve-puzzle id-2-monkeys id-2-num-items part2-inspect 10000))))

@@ -1,19 +1,17 @@
 (ns day2
-  (:require [clojure.string :as str]
-            [clojure.java.io :as io]))
+  (:require
+   [clojure.string :as str]))
 
-(defn read-strategy-guide [filename]
-  (with-open [file (io/reader filename)]
-    (doall (->>
-            file
-            (line-seq)
-            (map #(str/split % #" "))))))
+(defn- read-strategy-guide [s]
+  (->> s
+       slurp
+       str/split-lines
+       (map #(str/split % #" "))))
 
-(defn scorer [input game-score obj-score]
-  (let [get-score (fn [[a b :as k]] (+ (get game-score k) (get obj-score b)))]
-    (reduce + (map get-score input))))
+(defn- scorer [coll m1 m2]
+  (reduce + (map (fn [[_ b :as k]] (+ (m1 k) (m2 b))) coll)))
 
-(defn score-according-to-strategy [strategy]
+(defn- score-according-to-strategy [strategy]
   (let [game-score {["A" "X"] 3
                     ["A" "Y"] 6
                     ["A" "Z"] 0
@@ -26,7 +24,7 @@
         obj-score {"X" 1, "Y" 2, "Z" 3}]
     (scorer strategy game-score obj-score)))
 
-(defn score-according-to-requirement [strategy]
+(defn- score-according-to-requirement [strategy]
   (let [game-score {"X" 0 "Y" 3 "Z" 6}
         obj-score {["A" "X"] 3
                    ["A" "Y"] 1

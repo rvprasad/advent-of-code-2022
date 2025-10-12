@@ -1,60 +1,51 @@
 (ns day8
   (:require
-   [clojure.java.io :as io]
    [clojure.string :as str]))
 
-(defn- read-grid [filename]
-  (->>
-   filename
-   (slurp)
-   (#(str/split % #"\n"))
-   (map #(str/split % #""))
-   (map (partial map #(Integer. %)))
-   (map-indexed (fn [i row] (map-indexed #(vector %1 i %2) row)))))
-
-(defn- print-grid [grid]
-  (println)
-  (dorun (map println grid))
-  (println))
+(defn- read-grid [s]
+  (->> s
+       slurp
+       str/split-lines
+       (map #(str/split % #""))
+       (map (partial map #(Integer. %)))
+       (map-indexed (fn [i row] (map-indexed #(vector %1 i %2) row)))))
 
 (defn- get-rotated-grids-and-col-getters [grid]
-  (let [num-row (- (count grid) 1)
-        num-col (- (count (first grid)) 1)
-        grid-flipped (map reverse grid)
-        grid-flipped-transposed (apply map vector grid-flipped)
-        grid-flipped-transposed-flipped (map reverse grid-flipped-transposed)]
-    [[grid first] [grid-flipped #(- num-col (first %))]
-     [grid-flipped-transposed second]
-     [grid-flipped-transposed-flipped #(- num-row (second %))]]))
+  (let [flipped (map reverse grid)
+        flipped-transposed (apply map vector flipped)
+        flipped-transposed-flipped (map reverse flipped-transposed)]
+    [[grid first]
+     [flipped #(- (dec (count (first grid))) (first %))]
+     [flipped-transposed second]
+     [flipped-transposed-flipped #(- (dec (count grid)) (second %))]]))
 
-(defn- get-trees-visible-from-left [visible-trees [grid _]]
-  (let [f (fn [[curr acc :as v] [_ _ h :as e]]
-            (if (> h curr) [h (conj acc e)] v))]
-    (concat visible-trees
-            (apply concat (map #(second (reduce f [-1 []] %)) grid)))))
+(defn- get-trees-visible-from-left [trees [grid _]]
+  (let [f (fn [[c acc :as v] [_ _ h :as e]]
+            (if (> h c) [h (conj acc e)] v))]
+    (->> grid
+         (mapcat #(second (reduce f [-1 []] %)))
+         (concat trees))))
 
 (defn- count-visible-trees [grid]
-  (let [grids (get-rotated-grids-and-col-getters grid)]
-    (count (distinct (reduce get-trees-visible-from-left [] grids)))))
+  (count (distinct (reduce get-trees-visible-from-left []
+                           (get-rotated-grids-and-col-getters grid)))))
 
-(defn- get-scenic-scores-from-left [tree-2-score [grid get-pos]]
-  (let [process (fn [[decr-stack acc :as d] e]
-                  (if (empty? decr-stack)
+(defn- get-scenic-scores-from-left [tree-2-score [grid get-col]]
+  (let [process (fn [[stack acc] e]
+                  (if (empty? stack)
                     [(list e) acc]
-                    (let [new-decr-stack (drop-while #(> (nth e 2) (last %))
-                                                     decr-stack)
-                          prev_pos (if-some [tmp1 (first new-decr-stack)]
-                                     (get-pos tmp1)
-                                     0)
-                          pos (get-pos e)
-                          new_value (abs (* (get acc e 1) (- pos prev_pos)))]
-                      [(conj new-decr-stack e) (assoc acc e new_value)])))
-        scan (fn [acc row] (second (reduce process ['() acc] row)))]
-    (reduce scan tree-2-score grid)))
+                    (let [new-stack (drop-while #(> (nth e 2) (last %)) stack)
+                          prev_pos (if-some [l (first new-stack)] (get-col l) 0)
+                          pos (get-col e)
+                          new_value (abs (* (acc e 1) (- pos prev_pos)))]
+                      [(conj new-stack e) (assoc acc e new_value)])))]
+    (reduce (fn [acc row] (second (reduce process ['() acc] row)))
+            tree-2-score
+            grid)))
 
 (defn- max-scenic-score [grid]
-  (let [grids (get-rotated-grids-and-col-getters grid)]
-    (apply max (vals (reduce get-scenic-scores-from-left {} grids)))))
+  (apply max (vals (reduce get-scenic-scores-from-left {}
+                           (get-rotated-grids-and-col-getters grid)))))
 
 (defn -main [filename]
   (let [grid (read-grid filename)]

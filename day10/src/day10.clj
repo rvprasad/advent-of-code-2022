@@ -1,20 +1,13 @@
 (ns day10
   (:require
-   [clojure.java.io :as io]
    [clojure.set]
    [clojure.string :as str]))
 
-(defn- read-program [filename]
-  (->>
-   filename
-   (slurp)
-   (str/split-lines)))
-
 (defn- execute-inst [inst curr-cycle]
-  (let [next-cycle (+ curr-cycle 1)]
+  (let [next-cycle (inc curr-cycle)]
     (condp re-matches inst
       #"addx (-?\d+)" :>> (fn [[_ n]]
-                            [(Integer. n) [next-cycle (+ next-cycle 1)]])
+                            [(Integer. n) [next-cycle (inc next-cycle)]])
       #"noop" [0 [next-cycle]])))
 
 (defn- execute-program [program process]
@@ -35,8 +28,8 @@
   (reduce + (execute-program program get-hit-cycle)))
 
 (defn- get-pixel-positions [x cycles]
-  (let [cycles (map #(rem % 40) (map #(- % 1) cycles))]
-    (map #(if (some #{(- x 1) x (+ x 1)} [%]) \# \.) cycles)))
+  (let [cycles (map #(rem % 40) (map #(dec %) cycles))]
+    (map #(if (some #{(dec x) x (inc x)} [%]) \# \.) cycles)))
 
 (defn- draw-pixels [program]
   (let [pixels (execute-program program get-pixel-positions)]
@@ -44,6 +37,6 @@
       (println (str/join x)))))
 
 (defn -main [filename]
-  (let [program (read-program filename)]
+  (let [program (str/split-lines (slurp filename))]
     (println (sum-of-signal-strengths program))
     (draw-pixels program)))
