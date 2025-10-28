@@ -1,6 +1,5 @@
-This repo contains Clojure code to solve the puzzles from [2022 Advent of
-Code](https://adventofcode.com/2022).
-
+This repo contains Clojure (v1.12.3.1577) code to solve the puzzles from [2022 Advent
+of Code](https://adventofcode.com/2022).
 
 ## Attribution
 
