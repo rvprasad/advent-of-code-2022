@@ -14,27 +14,27 @@
                                (str/split succs #", ")]))
                {})))
 
-(defn- process-workitem [valve-2-rate-n-succs {:keys [valve open] :as item}]
+(defn- process-state [valve-2-rate-n-succs {:keys [valve open] :as item}]
   (let [path-rate (->> (:open item)
                        (map #(first (get valve-2-rate-n-succs %)))
                        (reduce +))
         prototype (update item :path-score #(+ % path-rate))
         [rate succs] (get valve-2-rate-n-succs valve)]
-    (concat (map #(merge prototype {:valve %}) succs)
+    (concat (map #(assoc prototype :valve %) succs)
             (if (and (> rate 0) (not (open valve)))
-              [(merge prototype {:open (conj open valve)})]
+              [(assoc prototype :open (conj open valve))]
               []))))
 
-(defn- process-worklist [valve-2-rate-n-succs worklist]
+(defn- process-state-frontier [valve-2-rate-n-succs worklist]
   (->> worklist
-       (map #(process-workitem valve-2-rate-n-succs %))
+       (map #(process-state valve-2-rate-n-succs %))
        (apply concat)
        (group-by #(select-keys % [:valve :open]))
-       (map (fn [[k v]] [k (apply max (map :path-score v))]))
-       (map (fn [[k v]] (assoc k :path-score v)))))
+       (map (fn [[m v]] 
+              (assoc m :path-score (apply max (map :path-score v)))))))
 
 (defn- generate-state [valve-2-rate-n-succs]
-  (iterate (partial process-worklist valve-2-rate-n-succs)
+  (iterate (partial process-state-frontier valve-2-rate-n-succs)
            [{:valve "AA" :open #{} :path-score 0}]))
 
 (defn- solve-part-1 [valve-2-rate-n-succs]

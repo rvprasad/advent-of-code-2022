@@ -58,15 +58,15 @@
 
 (defn- solve-part-2 [scan]
   (let [[[nx mx] [ny my] [nz mz]] (get-mins-and-maxs scan)
-        cubes (->> (for [x (range nx (inc mx))
-                         y (range ny (inc my))
-                         z (range nz (inc mz))]
-                     {:x x :y y :z z})
-                   (remove scan)
-                   set)
+        cubes-not-in-scan (->> (for [x (range nx (inc mx))
+                                       y (range ny (inc my))
+                                       z (range nz (inc mz))]
+                                   {:x x :y y :z z})
+                                 (remove scan)
+                                 set)
         not-exposed? #(and (< nx (:x %) mx) (< ny (:y %) my) (< nz (:z %) mz))]
     (- (solve-part-1 scan)
-       (->> cubes
+       (->> cubes-not-in-scan
             identify-cliques
             (filter #(every? not-exposed? %))
             (map solve-part-1)
