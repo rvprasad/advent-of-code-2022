@@ -1,5 +1,14 @@
-This repo contains Clojure (v1.12.3.1577) code to solve the puzzles from [2022 Advent
-of Code](https://adventofcode.com/2022).
+This repo contains Clojure (v1.12.3.1577) code to solve the puzzles from 
+[2022 Advent of Code](https://adventofcode.com/2022).
+
+## Instructions
+
+Unless day-specific README.md files contain specific instructions, use the
+following command to execute the solution for "day\<N\>" from within folder
+"day\<N\>" (where "N" is the day number).
+
+- `clj -M -m day<N> <filename>`
+
 
 ## Attribution
 
