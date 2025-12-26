@@ -5,10 +5,7 @@
 
 (defn- read-map [s]
   (let [helper (fn [match strings]
-                 (->> strings
-                      (map (fn [xs] (mapv #(if (= % match) \h \.) xs)))
-                      (map-indexed vector)
-                      (into {})))
+                 (map (fn [xs] (mapv #(if (= % match) \h \.) xs)) strings))
         lines (str/split-lines (slurp s))
         trimmed-rows (->> lines
                           (drop 1)
@@ -28,9 +25,9 @@
     (:left :up) (vec (concat (rest xs) [(first xs)]))
     (:right :down) (vec (concat [(last xs)] (butlast xs)))))
 
-(defn- move-hurricanes [dir-2-idx-2-hurricanes]
-  (->> dir-2-idx-2-hurricanes
-       (map (fn [[d i-2-h]] [d (update-vals i-2-h #(rotate % d))]))
+(defn- move-hurricanes [dir-2-hurricanes]
+  (->> dir-2-hurricanes
+       (map (fn [[d h]] [d (mapv #(rotate % d) h)]))
        (into {})))
 
 (defn- get-neighbors [[r c]]
